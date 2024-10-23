@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@faker-js/faker": "^9.0.3",
-    "i": "^0.3.7",
+    "mongodb": "^4.15.0",
+    "mongodb-uri": "^0.9.7",
     "npm": "^10.9.0"
   }
 }
