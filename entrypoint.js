@@ -20,7 +20,7 @@ MongoClient.connect(
 
       const articles  = await db.collection('article').find({ slug: 'department-international-development' }).toArray()
 
-      log(color('Articles found: ', 'blue') + ' - ' + articles.length)
-      log('\t' + JSON.stringify(articles))
+      log(color('Articles found: ', 'blue') + articles.length)
+    //   log('\t' + JSON.stringify(articles))
     }
   )

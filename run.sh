@@ -4,4 +4,4 @@
 docker build -t article-embedder .
 
 # Run the Docker container in the background
-docker run --name embedding-job --env-file .env -it --rm article-embedder
+docker -D run --name embedding-job --env-file .env -it --rm --user root article-embedder
