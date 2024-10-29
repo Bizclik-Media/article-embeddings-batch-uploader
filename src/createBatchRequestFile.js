@@ -20,6 +20,7 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
     const query = { displayDate: { $gte: cutoff } };
     const cursor = articleCollection.find(query).sort({ displayDate: -1 });
     const articleCount = await cursor.count();
+    let count = 0
     log(color(`articles found: ${articleCount}`, 'grey'));
 
     const numOfBatches = Math.ceil(articleCount / options.batchSize);
@@ -51,8 +52,6 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
                     JSON.stringify(batch, null, 2),
                     { resumable: false, metadata: { contentType: 'application/json' } }
                 );
-                log(color(`Successfully wrote request batch file: ${batchFileName}`, 'green'));
-
                 await embeddingFile.save(
                     JSON.stringify(
                         batch.map((b) => ({ id: b.custom_id, embedding: generateFakeEmbedding() })),
@@ -61,7 +60,8 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
                     ),
                     { resumable: false, metadata: { contentType: 'application/json' } }
                 );
-                log(color(`Successfully wrote embedding file: ${batchFileName}`, 'green'));
+                count++
+                log(color(`Successfully wrote files: ${batchFileName}`, 'green') + ` (${count}/${numOfBatches})`);
                 
                 batchFiles.push({ name: batchFileName, count: batch.length });
             } catch (err) {
