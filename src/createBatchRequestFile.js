@@ -69,13 +69,13 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
                 { resumable: false, metadata: { contentType: 'application/json' } }
             );
             count++
-            log(color(`Successfully wrote files: ${batchFileName}`, 'green') + ` (${count}/${numOfBatches}) - ${Math.ceil(count/numOfBatches) * 100}%`);
+            log(color(`Successfully wrote files: ${batchFileName}`, 'green') + ` (${count}/${numOfBatches}) - ${Math.floor((count/numOfBatches) * 100)}%`);
             
             batchFiles.push({ name: batchFileName, count: batch.length });
         } catch (err) {
             log(color(`Error writing batch file: ${batchFileName}`, 'red'));
             log('\t' + err)
-            log(color(`Retrying: ${batchFileName}`, 'blue') + ` (${count}/${numOfBatches}) - ${Math.ceil(count/numOfBatches) * 100}%`);
+            log(color(`Retrying: ${batchFileName}`, 'blue') + ` (${count}/${numOfBatches}) - ${Math.floor((count/numOfBatches) * 100)}%`);
             await handleBatch(i)
         }
     }
