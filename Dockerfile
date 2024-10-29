@@ -6,7 +6,7 @@ ARG GCLOUD_PROJECT_ID
 
 # Verify the secret and environment variable
 RUN echo $GCLOUD_PROJECT_ID
-RUN cat /run/secrets/gcloud_key
+RUN cat ./build/secrets/gcloud_key
 
 # Install Google Cloud SDK Dependencies
 RUN apt-get update
