@@ -25,6 +25,12 @@ const createBatchRequestFile = async (db, options=DEFAULT_OPTIONS) => {
     const numOfBatches = Math.ceil(articleCount / options.batchSize)
     log(color(`number of batches: ${numOfBatches}`, 'grey'))
 
+     // Ensure the ./tmp directory exists
+     const outputDir = path.join(__dirname, 'tmp');
+     if (!fs.existsSync(outputDir)) {
+         fs.mkdirSync(outputDir);
+     } 
+
     // Create files for each batch
     const batchFiles = []
     for(var i = 0; i < numOfBatches; i++) {
@@ -38,7 +44,7 @@ const createBatchRequestFile = async (db, options=DEFAULT_OPTIONS) => {
             }
         }
 
-        const batchFileName = `batch-${i}.json`
+        const batchFileName = path.join(outputDir, `batch-${i}.json`);
         log(color(`writing batch file: ${batchFileName}`, 'grey'))
 
         try {
