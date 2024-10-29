@@ -12,6 +12,7 @@ RUN apt-get install apt-transport-https ca-certificates gnupg curl
 
 COPY package*.json ./
 COPY src/ ./src/
+COPY utils/ ./utils/
 COPY ./secrets/gcloud_key .
 
 # Verify the secret and environment variable
