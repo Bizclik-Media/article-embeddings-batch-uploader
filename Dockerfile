@@ -26,7 +26,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
 #     gcloud auth activate-service-account --key-file /run/secrets/GCLOUD_CONFIG && \
 #     gcloud config set project $GCLOUD_PROJECT_ID
 
-RUN gcloud auth activate-service-account --key-file ./gcloud_key && \
+RUN gcloud auth activate-service-account --key-file ./gcloud_key
 RUN gcloud config set project $GCLOUD_PROJECT_ID
 
 COPY . .
