@@ -6,19 +6,17 @@ ARG GCLOUD_PROJECT_ID
 
 RUN ls
 
-RUN ls ../
-
-# Verify the secret and environment variable
-RUN echo $GCLOUD_PROJECT_ID
-RUN cat ./build/secrets/gcloud_key
-
 # Install Google Cloud SDK Dependencies
 RUN apt-get update
 RUN apt-get install apt-transport-https ca-certificates gnupg curl
 
 COPY package*.json ./
 COPY src/ ./src/
-COPY ./build/secrets/gcloud_key .
+COPY ./secrets/gcloud_key .
+
+# Verify the secret and environment variable
+RUN echo $GCLOUD_PROJECT_ID
+RUN cat gcloud_key
 
 RUN npm install
 
