@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/storage": "^7.13.0",
+    "hat": "^0.0.3",
     "mongodb": "^4.15.0",
     "mongodb-uri": "^0.9.7",
     "npm": "^10.9.0"
