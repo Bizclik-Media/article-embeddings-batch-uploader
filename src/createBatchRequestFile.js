@@ -2,9 +2,18 @@ import log from "../utils/log.js";
 import color from "../utils/color.js";
 import { convert } from "html-to-text"
 
+const chunkArray = (arr, chunkSize) => {
+    const results = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+        results.push(arr.slice(i, i + chunkSize));
+    }
+    return results;
+};
+
 
 const DEFAULT_OPTIONS = {
-    batchSize: 32 
+    batchSize: 32,
+    chunkSize: 4,
 }
 
 const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => {
@@ -71,7 +80,10 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
         })());
     }
 
-    await Promise.all(batchPromises); // Wait for all batch operations to complete
+    const chunkedBatches = chunkArray(batchPromises, options.chunkSize)
+    for (const chunk of chunkedBatches) {
+        await Promise.all(chunk);
+    }
 
     log(color('✅ Successfully', 'green') + ' created batch files');
     log(color('Batch files:', 'grey'), batchFiles.map((b) => b.name).join(', '));
