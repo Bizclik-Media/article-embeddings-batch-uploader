@@ -3,6 +3,8 @@ import color from "../utils/color.js";
 import fs from "fs"
 import path from "path";
 import { convert } from "html-to-text"
+import { fileURLToPath } from 'url';
+
 
 const DEFAULT_OPTIONS = {
     batchSize: 32 
@@ -27,6 +29,8 @@ const createBatchRequestFile = async (db, options=DEFAULT_OPTIONS) => {
     log(color(`number of batches: ${numOfBatches}`, 'grey'))
 
      // Ensure the ./tmp directory exists
+     const __filename = fileURLToPath(import.meta.url);
+     const __dirname = path.dirname(__filename);
      const outputDir = path.join(__dirname, 'tmp');
      if (!fs.existsSync(outputDir)) {
          fs.mkdirSync(outputDir);
