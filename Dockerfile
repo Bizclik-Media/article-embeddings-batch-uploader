@@ -4,6 +4,10 @@ WORKDIR /app
 
 ARG GCLOUD_PROJECT_ID
 
+RUN ls
+
+RUN ls ../
+
 # Verify the secret and environment variable
 RUN echo $GCLOUD_PROJECT_ID
 RUN cat ./build/secrets/gcloud_key
