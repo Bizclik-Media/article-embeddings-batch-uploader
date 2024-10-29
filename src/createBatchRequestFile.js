@@ -53,8 +53,8 @@ const createBatchRequestFile = async (db, options=DEFAULT_OPTIONS) => {
         log(color(`writing batch file: ${batchFileName}`, 'grey'))
 
         try {
-            fs.writeFileSync(`./tmp/${batchFileName}`, JSON.stringify(batch, null, 2));
-            fs.writeFileSync(`tmp/${batchFileName}-fake-embedding`, JSON.stringify(
+            fs.writeFileSync(batchFileName, JSON.stringify(batch, null, 2));
+            fs.writeFileSync(`${batchFileName}-fake-embedding`, JSON.stringify(
                 batch.map((b) => ({id: b.custom_id, embedding: generateFakeEmbedding()})), null, 2)
             );
             log(color(`Successfully wrote batch file: ${batchFileName}`, 'green'));
