@@ -38,46 +38,50 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
     const batchFiles = [];
     const batchPromises = [];
 
+    const handleBatch = async (i) => {
+        const batch = [];
+        const batchCursor = articleCollection.find(query).skip(i * options.batchSize).limit(options.batchSize).sort({ displayDate: -1 });
+
+        while (await batchCursor.hasNext()) {
+            const article = await batchCursor.next();
+            if (article) {
+                batch.push(requestify(article));
+            }
+        }
+
+        const batchFileName = `batch-${i}.json`;
+        log(color(`writing batch file to bucket: ${batchFileName}`, 'grey'));
+
+        const requestFile = bucket.file(`batch-requests/${batchFileName}`);
+        const embeddingFile = bucket.file(`embeddings/${batchFileName}`);
+
+        try {
+            await requestFile.save(
+                JSON.stringify(batch, null, 2),
+                { resumable: false, metadata: { contentType: 'application/json' } }
+            );
+            await embeddingFile.save(
+                JSON.stringify(
+                    batch.map((b) => ({ id: b.custom_id, embedding: generateFakeEmbedding() })),
+                    null,
+                    2
+                ),
+                { resumable: false, metadata: { contentType: 'application/json' } }
+            );
+            count++
+            log(color(`Successfully wrote files: ${batchFileName}`, 'green') + ` (${count}/${numOfBatches}) - ${Math.ceil(count/numOfBatches) * 100}%`);
+            
+            batchFiles.push({ name: batchFileName, count: batch.length });
+        } catch (err) {
+            log(color(`Error writing batch file: ${batchFileName}`, 'red'));
+            log('\t' + err)
+            log(color(`Retrying: ${batchFileName}`, 'blue') + ` (${count}/${numOfBatches}) - ${Math.ceil(count/numOfBatches) * 100}%`);
+            await handleBatch(i)
+        }
+    }
+
     for (let i = 0; i < numOfBatches; i++) {
-        batchPromises.push((async () => {
-            const batch = [];
-            const batchCursor = articleCollection.find(query).skip(i * options.batchSize).limit(options.batchSize).sort({ displayDate: -1 });
-
-            while (await batchCursor.hasNext()) {
-                const article = await batchCursor.next();
-                if (article) {
-                    batch.push(requestify(article));
-                }
-            }
-
-            const batchFileName = `batch-${i}.json`;
-            log(color(`writing batch file to bucket: ${batchFileName}`, 'grey'));
-
-            const requestFile = bucket.file(`batch-requests/${batchFileName}`);
-            const embeddingFile = bucket.file(`embeddings/${batchFileName}`);
-
-            try {
-                await requestFile.save(
-                    JSON.stringify(batch, null, 2),
-                    { resumable: false, metadata: { contentType: 'application/json' } }
-                );
-                await embeddingFile.save(
-                    JSON.stringify(
-                        batch.map((b) => ({ id: b.custom_id, embedding: generateFakeEmbedding() })),
-                        null,
-                        2
-                    ),
-                    { resumable: false, metadata: { contentType: 'application/json' } }
-                );
-                count++
-                log(color(`Successfully wrote files: ${batchFileName}`, 'green') + ` (${count}/${numOfBatches})`);
-                
-                batchFiles.push({ name: batchFileName, count: batch.length });
-            } catch (err) {
-                log(color(`Error writing batch file: ${batchFileName}`, 'red'));
-                return log('\t' + err)
-            }
-        })());
+        batchPromises.push(handleBatch(i));
     }
 
     const chunkedBatches = chunkArray(batchPromises, options.chunkSize)
