@@ -13,7 +13,7 @@ const { database } = mongodbUri.parse(connectionUri)
 const storage = new Storage();
 const createBucket = async () => {
   const bucketName = hat()
-  await storage.createBucket(bucketName);
+  // await storage.createBucket(bucketName);
   log(color('Successfully', 'green'), `created GCloud bucket: ${bucketName}.`);
   log(`\thttps://console.cloud.google.com/storage/browser/${bucketName}?project=${process.env.GCLOUD_PROJECT_ID}`)
 }
