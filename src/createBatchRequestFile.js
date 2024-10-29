@@ -18,7 +18,7 @@ const createBatchRequestFile = async (db, bucket, options=DEFAULT_OPTIONS) => {
     log(color(`article cuttoff date: ${cutoff.toISOString()}`, 'grey'))
 
     const query = { displayDate: { $gte: cutoff } }
-    const cursor = articleCollection.find(query).limit(100).sort({ displayDate: -1 })
+    const cursor = articleCollection.find(query).sort({ displayDate: -1 })
     const articleCount = await cursor.count()
     log(color(`articles found: ${articleCount}`, 'grey'))
 
