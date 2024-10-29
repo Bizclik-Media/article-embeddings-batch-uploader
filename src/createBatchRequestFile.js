@@ -1,6 +1,7 @@
 import log from "../utils/log.js";
 import color from "../utils/color.js";
 import fs from "fs"
+import path from "path";
 import { convert } from "html-to-text"
 
 const DEFAULT_OPTIONS = {
