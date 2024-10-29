@@ -26,8 +26,13 @@ MongoClient.connect(
     const db = client.db(database)
     log(color('Successfully', 'green'), 'connected to database')
 
+    // Configure storage
+    const bucketName = 'batch-requests-' + new Date().toISOString().replace(/[^0-9]/g, '');
+    await storage.createBucket(bucketName);
+    const bucket = storage.bucket(bucketName);
+
     // Create batcher
-    const batchRequestsResponse = await createBatchRequestFile(db)
+    const batchRequestsResponse = await createBatchRequestFile(db, bucket)
     const { batchFiles, status } = batchRequestsResponse
     if(status === 'success') {
       log(color('Batch files created: ', 'blue') + batchFiles.length)
@@ -36,18 +41,10 @@ MongoClient.connect(
     }
 
     // Create bucket and upload files
-    const bucketName = 'batch-requests-' + new Date().toISOString().replace(/[^0-9]/g, '');
-    await storage.createBucket(bucketName);
     log(color('Successfully', 'green'), `created GCloud bucket: ${bucketName}.`);
     log(`\thttps://console.cloud.google.com/storage/browser/${bucketName}?project=${process.env.GCLOUD_PROJECT_ID}`)
-    for(const file of batchFiles) {
-      await storage.bucket(bucketName).upload(file.filePath, {
-        destination: 'batch-requests/' + file.name
-      })
-      await storage.bucket(bucketName).upload(file.embeddingFilePath, {
-        destination: 'embeddings/' + file.name
-      })
-    }
+
+    // combine all embeddings into 1 master file
   }
 )
 

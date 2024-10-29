@@ -1,16 +1,13 @@
 import log from "../utils/log.js";
 import color from "../utils/color.js";
-import fs from "fs"
-import path from "path";
 import { convert } from "html-to-text"
-import { fileURLToPath } from 'url';
 
 
 const DEFAULT_OPTIONS = {
     batchSize: 32 
 }
 
-const createBatchRequestFile = async (db, options=DEFAULT_OPTIONS) => {
+const createBatchRequestFile = async (db, bucket, options=DEFAULT_OPTIONS) => {
     let response
     log('Beginning batching process')
 
@@ -21,20 +18,12 @@ const createBatchRequestFile = async (db, options=DEFAULT_OPTIONS) => {
     log(color(`article cuttoff date: ${cutoff.toISOString()}`, 'grey'))
 
     const query = { displayDate: { $gte: cutoff } }
-    const cursor = articleCollection.find(query).sort({ displayDate: -1 })
+    const cursor = articleCollection.find(query).limit(100).sort({ displayDate: -1 })
     const articleCount = await cursor.count()
     log(color(`articles found: ${articleCount}`, 'grey'))
 
     const numOfBatches = Math.ceil(articleCount / options.batchSize)
     log(color(`number of batches: ${numOfBatches}`, 'grey'))
-
-     // Ensure the ./tmp directory exists
-     const __filename = fileURLToPath(import.meta.url);
-     const __dirname = path.dirname(__filename);
-     const outputDir = path.join(__dirname, 'tmp');
-     if (!fs.existsSync(outputDir)) {
-         fs.mkdirSync(outputDir);
-     } 
 
     // Create files for each batch
     const batchFiles = []
@@ -49,18 +38,30 @@ const createBatchRequestFile = async (db, options=DEFAULT_OPTIONS) => {
             }
         }
 
-        const batchFileName = path.join(outputDir, `batch-${i}.json`);
-        log(color(`writing batch file: ${batchFileName}`, 'grey'))
+        const batchFileName = `batch-${i}.json`
+        log(color(`writing batch file to bucket: ${batchFileName}`, 'grey'))
+
+        const requestFile = bucket.file(`batch-requests/batch-${i}.json`);
+        const embeddingFile = bucket.file(`embeddings/batch-${i}.json`);
 
         try {
-            fs.writeFileSync(batchFileName, JSON.stringify(batch, null, 2));
-            fs.writeFileSync(`${batchFileName}-fake-embedding`, JSON.stringify(
-                batch.map((b) => ({id: b.custom_id, embedding: generateFakeEmbedding()})), null, 2)
+            await requestFile.save(
+                JSON.stringify(batch, null, 2),
+                {  resumable: false, metadata: { contentType: 'application/json' } }
             );
-            log(color(`Successfully wrote batch file: ${batchFileName}`, 'green'));
-            batchFiles.push({name: batchFileName, count: batch.length, filePath: `./tmp/${batchFileName}`, embeddingFilePath: `./tmp/${batchFileName}-fake-embedding`});
+            log(color(`Successfully wrote request batch file: ${batchFileName}`, 'green'));
+            await embeddingFile.save(
+                JSON.stringify(
+                    batch.map((b) => ({id: b.custom_id, embedding: generateFakeEmbedding()})),
+                    null,
+                    2
+                ),
+                {  resumable: false, metadata: { contentType: 'application/json' } }
+            );
+            log(color(`Successfully wrote embedding file: ${batchFileName}`, 'green'));
+            batchFiles.push({name: batchFileName, count: batch.length })
         } catch (err) {
-            console.error(`Error writing batch file: ${batchFileName}`, err);
+            log(color(`Error writing batch file: ${batchFileName}`, 'red'));
         }
     }
 
