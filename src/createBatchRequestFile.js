@@ -26,7 +26,7 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
     const cutoff = new Date("2022-01-01T00:00:00.000+00:00");
     log(color(`article cutoff date: ${cutoff.toISOString()}`, 'grey'));
 
-    const query = { displayDate: { $gte: cutoff } };
+    const query = { displayDate: { $gte: cutoff, state: "Published" } };
     const cursor = articleCollection.find(query).sort({ displayDate: -1 });
     const articleCount = await cursor.count();
     let count = 0
@@ -49,7 +49,7 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
             }
         }
 
-        const batchFileName = `batch-${i}.json`;
+        const batchFileName = `batch-${i}.jsonl`;
         log(color(`writing batch file to bucket: ${batchFileName}`, 'grey'));
 
         const requestFile = bucket.file(`batch-requests/${batchFileName}`);
@@ -57,16 +57,16 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
 
         try {
             await requestFile.save(
-                JSON.stringify(batch, null, 2),
-                { resumable: false, metadata: { contentType: 'application/json' } }
+                jsonl.stringify(batch, null, 2),
+                { resumable: false, metadata: { contentType: 'application/jsonl' } }
             );
             await embeddingFile.save(
-                JSON.stringify(
+                jsonl.stringify(
                     batch.map((b) => ({ id: b.custom_id, embedding: generateFakeEmbedding() })),
                     null,
                     2
                 ),
-                { resumable: false, metadata: { contentType: 'application/json' } }
+                { resumable: false, metadata: { contentType: 'application/jsonl' } }
             );
             count++
             log(color(`Successfully wrote files: ${batchFileName}`, 'green') + ` (${count}/${numOfBatches}) - ${Math.floor((count/numOfBatches) * 100)}%`);
@@ -129,3 +129,7 @@ const generateFakeEmbedding = () => {
   }
 
 export default createBatchRequestFile;
+
+
+
+// Ready for batch uploads
