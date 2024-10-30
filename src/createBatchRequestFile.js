@@ -57,11 +57,11 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
 
         try {
             await requestFile.save(
-                jsonl.stringify(batch, null, 2),
+                JSON.stringify(batch, null, 2),
                 { resumable: false, metadata: { contentType: 'application/jsonl' } }
             );
             await embeddingFile.save(
-                jsonl.stringify(
+                JSON.stringify(
                     batch.map((b) => ({ id: b.custom_id, embedding: generateFakeEmbedding() })),
                     null,
                     2
@@ -134,8 +134,12 @@ export default createBatchRequestFile;
 
 // Ready for batch uploads
 // - 1. Find bucket and get a list of file names
-// - 2 Iterate over list and do the following
-// - 2.1 Download the file
-// - 2.2 Parse then upload the file to openai file endpoint
-// - 2.4 Delete file from local storage 
-// - 2.5
+// - 2. Iterate over list and do the following
+// - 2.1. Download the file
+// - 2.2. Parse then upload the file to openai file endpoint + create batch request based on response
+// - 3. Periodically check the status of the batch request
+// - 4. Once status is complete, download the file and store in the bucket
+// - 5. Also read the file & running the Pinecone upsert with the embedding & some metadata
+
+
+// If you check one batch every 5 seconds, you can check 720 batches in an hour, so 
