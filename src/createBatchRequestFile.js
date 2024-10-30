@@ -26,7 +26,7 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
     const cutoff = new Date("2022-01-01T00:00:00.000+00:00");
     log(color(`article cutoff date: ${cutoff.toISOString()}`, 'grey'));
 
-    const query = { displayDate: { $gte: cutoff, state: "Published" } };
+    const query = { displayDate: { $gte: cutoff }, state: "Published" };
     const cursor = articleCollection.find(query).sort({ displayDate: -1 });
     const articleCount = await cursor.count();
     let count = 0
@@ -133,3 +133,9 @@ export default createBatchRequestFile;
 
 
 // Ready for batch uploads
+// - 1. Find bucket and get a list of file names
+// - 2 Iterate over list and do the following
+// - 2.1 Download the file
+// - 2.2 Parse then upload the file to openai file endpoint
+// - 2.4 Delete file from local storage 
+// - 2.5
