@@ -117,7 +117,8 @@ const requestify = (article) => {
         "url": "/v1/embeddings",
         "body": {
             "model": "text-embedding-3-small",
-            "input": `Title: ${article.headline}, Standfirst: ${article.standfirst}, Body: ${getPlaintext(article.body.widgets)}`
+            "input": `Title: ${article.headline}, Standfirst: ${article.standfirst}, Body: ${getPlaintext(article.body.widgets)}`,
+            "encoding_format": "float"
         }}
     )
 }
