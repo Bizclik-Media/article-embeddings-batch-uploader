@@ -27,7 +27,7 @@ const createBatchRequestFile = async (db, bucket, options = DEFAULT_OPTIONS) => 
     log(color(`article cutoff date: ${cutoff.toISOString()}`, 'grey'));
 
     const query = { displayDate: { $gte: cutoff }, state: "Published" };
-    const cursor = articleCollection.find(query).sort({ displayDate: -1 });
+    const cursor = articleCollection.find(query).limit(10).sort({ displayDate: -1 });
     const articleCount = await cursor.count();
     let count = 0
     log(color(`articles found: ${articleCount}`, 'grey'));
@@ -137,6 +137,10 @@ export default createBatchRequestFile;
 // - 2. Iterate over list and do the following
 // - 2.1. Download the file
 // - 2.2. Parse then upload the file to openai file endpoint + create batch request based on response
+// - 2.3. Add to articleBatchRequest collection in the database
+// - 2.4. Append to article collection with the batchRequestId
+
+// Another job
 // - 3. Periodically check the status of the batch request
 // - 4. Once status is complete, download the file and store in the bucket
 // - 5. Also read the file & running the Pinecone upsert with the embedding & some metadata

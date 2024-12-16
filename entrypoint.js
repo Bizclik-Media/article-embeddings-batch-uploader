@@ -5,6 +5,7 @@ import log from './utils/log.js'
 import { Storage } from '@google-cloud/storage'
 import hat from 'hat'
 import createBatchRequestFile from './src/createBatchRequestFile.js'
+import sendRequest from './src/sendRequest.js'
 
 // Database connection
 const connectionUri = process.env.MONGO_URL || `mongodb://host.docker.internal:27017/${process.env.DB_NAME}`
@@ -30,6 +31,9 @@ MongoClient.connect(
     const bucketName = 'batch-requests-' + new Date().toISOString().replace(/[^0-9]/g, '');
     await storage.createBucket(bucketName);
     const bucket = storage.bucket(bucketName);
+    // Create bucket and upload files
+    log(color('Successfully', 'green'), `created GCloud bucket: ${bucketName}.`);
+    log(`\thttps://console.cloud.google.com/storage/browser/${bucketName}?project=${process.env.GCLOUD_PROJECT_ID}`)
 
     // Create batcher
     const batchRequestsResponse = await createBatchRequestFile(db, bucket)
@@ -40,11 +44,12 @@ MongoClient.connect(
       return log(color('Error', 'red'), 'occured while creating batch files')
     }
 
-    // Create bucket and upload files
-    log(color('Successfully', 'green'), `created GCloud bucket: ${bucketName}.`);
+    // Upload files
+    log(color('Success', 'green'), `, checkout GCloud bucket: ${bucketName}.`);
     log(`\thttps://console.cloud.google.com/storage/browser/${bucketName}?project=${process.env.GCLOUD_PROJECT_ID}`)
 
-    // combine all embeddings into 1 master file
+    // Get full list of items
+    await sendRequest(db, bucket)
   }
 )
 
