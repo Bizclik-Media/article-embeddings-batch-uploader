@@ -1,57 +1,85 @@
-import { MongoClient } from 'mongodb'
-import mongodbUri from 'mongodb-uri'
 import color from './utils/color.js'
-import log from './utils/log.js'
-import { Storage } from '@google-cloud/storage'
-import hat from 'hat'
-import createBatchRequestFile from './src/createBatchRequestFile.js'
-import sendRequest from './src/sendRequest.js'
+import { LogLevel } from './utils/log.js';
+import init from './src/init.js'
+import handleBatchRequests from './src/handleBatchRequests.js';
+import checkStatus from './src/checkStatus.js';
+import updatePinecone from './src/updatePinecone.js';
 
-// Database connection
-const connectionUri = process.env.MONGO_URL || `mongodb://host.docker.internal:27017/${process.env.DB_NAME}`
-const { database } = mongodbUri.parse(connectionUri)
+const JOB_STATUS = {
+  INITIALISING: 'initialising',
+  CREATING_AND_SENDING_BATCH_REQUESTS: 'creating_and_sending_batch_requests',
+  CHECKING_STATUS: 'checking_status',
+  UPDATING_VECTOR_STORE: 'updating_vector_store',
+  ERROR: 'error',
+  SUCCESS: 'success',
+  EXIT: 'exit'
+}
 
-// Storage connection
-const storage = new Storage();
+// Statuses (initialising, creating_batches, sending_batch_requests, checking_status, updating_vector_store)
 
-// Begin connection
-log(color('Connecting', 'grey'), 'to database...')
-MongoClient.connect(
-  connectionUri,
-  { useNewUrlParser: true, useUnifiedTopology: true },
-  async (err, client) => {
-    if (err) {
-      log(color('Error', 'red'), 'occured while connecting to database')
-      return log('\t' + err)
-    }
-    const db = client.db(database)
-    log(color('Successfully', 'green'), 'connected to database')
+// HandleStatus(STATUS) { switch(STATUS) { case } }
 
-    // Configure storage
-    const bucketName = 'batch-requests-' + new Date().toISOString().replace(/[^0-9]/g, '');
-    await storage.createBucket(bucketName);
-    const bucket = storage.bucket(bucketName);
-    // Create bucket and upload files
-    log(color('Successfully', 'green'), `created GCloud bucket: ${bucketName}.`);
-    log(`\thttps://console.cloud.google.com/storage/browser/${bucketName}?project=${process.env.GCLOUD_PROJECT_ID}`)
+let mongoClient, db, storage, bucket, openaiClient, pineconeClient, logger, errors=[], state;
 
-    // Create batcher
-    const batchRequestsResponse = await createBatchRequestFile(db, bucket)
-    const { batchFiles, status } = batchRequestsResponse
-    if(status === 'success') {
-      log(color('Batch files created: ', 'blue') + batchFiles.length)
-    } else {
-      return log(color('Error', 'red'), 'occured while creating batch files')
-    }
+async function handler(status) {
+  switch(status) {
+    case 'initialising':
+      const dependencies = await init();
+      errors = dependencies.errors;
+      
+      if(errors.length > 0) { 
+        return handler(JOB_STATUS.ERROR); 
+      }
 
-    // Upload files
-    log(color('Success', 'green'), `, checkout GCloud bucket: ${bucketName}.`);
-    log(`\thttps://console.cloud.google.com/storage/browser/${bucketName}?project=${process.env.GCLOUD_PROJECT_ID}`)
+      mongoClient = dependencies.mongoClient;
+      db = dependencies.db;
+      storage = dependencies.storage;
+      bucket = dependencies.bucket;
+      openaiClient = dependencies.openaiClient;
+      pineconeClient = dependencies.pineconeClient;
+      logger = dependencies.logger;
+      state = dependencies.state;
 
-    // Get full list of items
-    await sendRequest(db, bucket)
+      await logger.log(LogLevel.INFO, color('Initialising', 'grey'), '✅ Initialising complete');
+      return handler(JOB_STATUS.CREATING_AND_SENDING_BATCH_REQUESTS);
+
+    case 'creating_and_sending_batch_requests':
+      // Creating the batch responses, and sending them to the OpenAI API, and storing the batch info in collection
+      await handleBatchRequests(db, bucket, logger, state, openaiClient)
+      return handler(JOB_STATUS.CHECKING_STATUS);
+
+
+    case 'checking_status':
+      // polling the OpenAI API for the status of the batch requests
+      await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'checking_status' } });
+      await checkStatus(db, logger, state, openaiClient);
+      return handler(JOB_STATUS.UPDATING_VECTOR_STORE);
+
+
+    case 'updating_vector_store':
+      await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'updating_vector_store' } });
+      updatePinecone(db, logger, state, openaiClient, pineconeClient);
+      return handler(JOB_STATUS.SUCCESS);
+
+
+    case 'success':
+      await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'success' } });
+      return await logger.log(LogLevel.INFO, color('Success', 'green'), '✅ Successfully created & uploaded batch files, congratulations 🥳!');
+
+
+    case 'error':
+      await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'error' } });
+      await logger.log(LogLevel.ERROR, color('Error', 'red'), '⛔️ Unexpected error occured, check logs for more information');
+      return errors.forEach(err => log('\t' + err));
+
+    case 'exit':
+      await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'exited' } });
+      await logger.log(LogLevel.INFO, color('Exiting', 'grey'), '🔄 Exiting process...');
+      return
+
+    default: 
+      return
   }
-)
+}
 
-
-
+await handler(JOB_STATUS.INITIALISING)

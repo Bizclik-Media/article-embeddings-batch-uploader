@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@google-cloud/storage": "^7.13.0",
+    "@pinecone-database/pinecone": "^4.0.0",
     "hat": "^0.0.3",
     "html-to-text": "^9.0.5",
     "mongodb": "^4.15.0",
