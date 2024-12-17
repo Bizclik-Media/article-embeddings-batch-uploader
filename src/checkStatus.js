@@ -84,12 +84,13 @@ async function checkStatus(
 
         // Re-run after polling interval
         await logger.log(LogLevel.INFO, color('Re-checking status after interval...', 'grey'));
-        setTimeout(pollBatches, options.pollingInterval);
+        return new Promise(resolve => setTimeout(() => resolve(pollBatches()), options.pollingInterval));
+
     }
 
     // Start polling
     await logger.log(LogLevel.INFO, color('Starting batch status check...', 'grey'), '🔄 Checking status...');
-    pollBatches();
+    await pollBatches();
 }
 
 export default checkStatus;

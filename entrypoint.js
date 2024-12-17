@@ -41,7 +41,7 @@ async function handler(status) {
       state = dependencies.state;
 
       await logger.log(LogLevel.INFO, color('Initialising', 'grey'), '✅ Initialising complete');
-      return handler(JOB_STATUS.CREATING_AND_SENDING_BATCH_REQUESTS);
+      return handler(JOB_STATUS.UPDATING_VECTOR_STORE);
 
     case 'creating_and_sending_batch_requests':
       // Creating the batch responses, and sending them to the OpenAI API, and storing the batch info in collection
@@ -57,8 +57,9 @@ async function handler(status) {
 
 
     case 'updating_vector_store':
+      state.jobId = '6761fb30d01463cb449a7a22'
       await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'updating_vector_store' } });
-      updatePinecone(db, logger, state, openaiClient, pineconeClient);
+      await updatePinecone(db, logger, state, openaiClient, pineconeClient);
       return handler(JOB_STATUS.SUCCESS);
 
 
