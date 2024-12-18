@@ -34,18 +34,16 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
                 const article = await db.collection('article').findOne({ _id: ObjectId(id) });
                 let metadata = {};
                 if(article) {
-                    metadata = {
-                        _id: ObjectId(article._id),
-                        headline: article.headline,
-                        state: article.state,
-                        displayDate: article.displayDate,
-                        tags: article.tags ? article.tags.map((t) => t.tag) : [],
-                        category: article.category,
-                        contentType: article.contentType,
-                        subContentType: article.subContentType,
-                        instance: article.instance,
-                        author: article.author
-                    }
+                    if (article._id) metadata._id = ObjectId(article._id);
+                    if (article.headline) metadata.headline = article.headline;
+                    if (article.state) metadata.state = article.state;
+                    if (article.displayDate) metadata.displayDate = article.displayDate;
+                    if (article.tags) metadata.tags = article.tags.map((t) => t.tag);
+                    if (article.category) metadata.category = article.category;
+                    if (article.contentType) metadata.contentType = article.contentType;
+                    if (article.subContentType) metadata.subContentType = article.subContentType;
+                    if (article.instance) metadata.instance = article.instance;
+                    if (article.author) metadata.author = article.author;
                 }
                 logger.log(LogLevel.INFO, color('\tArticle metadata:', 'grey'), JSON.stringify(metadata));
                 upsertPayload.push({ id, values: embedding, metadata});
