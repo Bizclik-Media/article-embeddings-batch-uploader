@@ -91,6 +91,7 @@ async function checkStatus(
     // Start polling
     await logger.log(LogLevel.INFO, color('Starting batch status check...', 'grey'), '🔄 Checking status...');
     await pollBatches();
+    return 
 }
 
 export default checkStatus;
