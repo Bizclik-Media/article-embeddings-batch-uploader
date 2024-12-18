@@ -4,14 +4,17 @@ import color from '../utils/color.js';
 async function updatePinecone(db, logger = createLogger(), state, openaiClient, pineconeClient) {
     await logger.log(LogLevel.INFO, color('Updating Pinecone', 'grey'), '🔄 Updating Pinecone index...');
 
+    const index = pineconeClient.index('article-test');
     const collection = db.collection('article-embedding-job-batch');
-    const cursor = collection.find({
+    const query = {
         jobId: String(state.jobId),
         status: 'completed'
-    });
+    };
+    const count = await collection.countDocuments(query);
+    await logger.log(LogLevel.INFO, color(`Found ${count} completed batches to process.`, 'grey'));
 
-    const index = pineconeClient.index('article-test');
 
+    const cursor = collection.find(query);
     while (await cursor.hasNext()) {
         const jobBatch = await cursor.next();
 
