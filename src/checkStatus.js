@@ -1,8 +1,18 @@
 import createLogger, { LogLevel } from '../utils/log.js';
 import color from '../utils/color.js';
 
+const getPollingInterval = () => {
+    const defautInterval = 1000 * 60 * 5 // 60 seconds (5 minute)
+    if(process.env.POLLING_INTERVAL) {
+        const interval = Number(process.env.POLLING_INTERVAL)
+        if(!isNaN(interval)) return defautInterval
+        if(interval < 10000) return defautInterval
+        return interval
+    }
+}
+
 const DEFAULT_OPTIONS = {
-    pollingInterval: process.env.POLLING_INTERVAL || 1000 * 60 * 5 // 60 seconds (5 minute)
+    pollingInterval: getPollingInterval() // 60 seconds (5 minute)
 };
 async function checkStatus(
     db,
