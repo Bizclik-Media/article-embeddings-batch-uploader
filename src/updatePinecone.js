@@ -30,18 +30,24 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
                 const object = JSON.parse(line);
                 const id = object.custom_id
                 const embedding = object.response.body.data[0].embedding;
-                const article = await db.collection('articles').findOne({ _id: id });
-                upsertPayload.push({ id, values: embedding, metadata: {
-                    headline: article.headline,
-                    state: article.state,
-                    displayDate: article.displayDate,
-                    tags: article.tags,
-                    category: article.category,
-                    contentType: article.contentType,
-                    subContentType: article.subContentType,
-                    instance: article.instance,
-                    author: article.author,
-                }});
+                const article = await db.collection('article').findOne({ _id: id });
+                let metadata = {};
+                if(article) {
+                    metadata = {
+                        _id: article._id,
+                        headline: article.headline,
+                        state: article.state,
+                        displayDate: article.displayDate,
+                        tags: article.tags,
+                        category: article.category,
+                        contentType: article.contentType,
+                        subContentType: article.subContentType,
+                        instance: article.instance,
+                        author: article.author
+                    }
+                }
+                logger.log(LogLevel.INFO, color('\tArticle metadata:', 'grey'), JSON.stringify(metadata));
+                upsertPayload.push({ id, values: embedding, metadata});
             }
             
             // Upsert to Pinecone
