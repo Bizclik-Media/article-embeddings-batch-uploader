@@ -1,5 +1,6 @@
 import createLogger, { LogLevel } from '../utils/log.js';
 import color from '../utils/color.js';
+import { ObjectId } from 'mongodb';
 
 async function updatePinecone(db, logger = createLogger(), state, openaiClient, pineconeClient) {
     await logger.log(LogLevel.INFO, color('Updating Pinecone', 'grey'), '🔄 Updating Pinecone index...');
@@ -30,11 +31,11 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
                 const object = JSON.parse(line);
                 const id = object.custom_id
                 const embedding = object.response.body.data[0].embedding;
-                const article = await db.collection('article').findOne({ _id: id });
+                const article = await db.collection('article').findOne({ _id: ObjectId(id) });
                 let metadata = {};
                 if(article) {
                     metadata = {
-                        _id: article._id,
+                        _id: ObjectId(article._id),
                         headline: article.headline,
                         state: article.state,
                         displayDate: article.displayDate,
