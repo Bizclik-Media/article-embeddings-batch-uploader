@@ -39,7 +39,7 @@ const getPlaintext = (widgets) => {
 
 const requestify = (article) => {
     return ({
-        "custom_id": `article-${article._id}-${new Date().toISOString().replace(/[^0-9]/g, '')}`,
+        "custom_id": String(article._id),
         "method": "POST",
         "url": "/v1/embeddings",
         "body": {

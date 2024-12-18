@@ -21,16 +21,25 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
             const fileResponse = await openaiClient.files.content(jobBatch.openaiOutputFileId);
             const fileContent = await fileResponse.text();  
             await logger.log(LogLevel.INFO, color(`\tRetrieved embeddings for batchId: ${jobBatch.openaiBatchId} from ${jobBatch.openaiOutputFileId}`, 'grey'));
-            const upsertPayload = fileContent
-                .split('\n')
-                .map((line) => {
-                    if(!line) return null  
-                    const object = JSON.parse(line);
-                    const id = object.custom_id
-                    const embedding = object.response.body.data[0].embedding;
-                    return { id, values: embedding };
-                    })
-                .filter((line) => line);
+            const upsertPayload = []
+            for await (const line of fileContent.split('\n')) {
+                if(!line) continue
+                const object = JSON.parse(line);
+                const id = object.custom_id
+                const embedding = object.response.body.data[0].embedding;
+                const article = await db.collection('articles').findOne({ _id: id });
+                upsertPayload.push({ id, values: embedding, metadata: {
+                    headline: article.headline,
+                    state: article.state,
+                    displayDate: article.displayDate,
+                    tags: article.tags,
+                    category: article.category,
+                    contentType: article.contentType,
+                    subContentType: article.subContentType,
+                    instance: article.instance,
+                    author: article.author,
+                }});
+            }
             
             // Upsert to Pinecone
             // await index.namespace(String(state.jobId)).upsert(upsertPayload);
