@@ -6,7 +6,7 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
 
     const collection = db.collection('article-embedding-job-batch');
     const cursor = collection.find({
-        jobId: state.jobId,
+        jobId: String(state.jobId),
         status: 'completed'
     });
 
