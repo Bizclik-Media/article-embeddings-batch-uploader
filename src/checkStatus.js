@@ -2,7 +2,7 @@ import createLogger, { LogLevel } from '../utils/log.js';
 import color from '../utils/color.js';
 
 const DEFAULT_OPTIONS = {
-    pollingInterval: 1000 * 60 * 5 // 60 seconds (5 minute)
+    pollingInterval: process.env.POLLING_INTERVAL || 1000 * 60 * 5 // 60 seconds (5 minute)
 };
 async function checkStatus(
     db,
