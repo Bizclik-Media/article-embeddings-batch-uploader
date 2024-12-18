@@ -65,7 +65,7 @@ async function handleBatchRequests(db, bucket, logger, state, openaiClient, opti
     await logger.log(LogLevel.INFO, color(`article cutoff date: ${cutoff.toISOString()}`, 'grey'));
 
     const query = { displayDate: { $gte: cutoff }, state: "Published" };
-    const cursor = articleCollection.find(query).limit(10000).sort({ displayDate: -1 });
+    const cursor = articleCollection.find(query).limit(20000).sort({ displayDate: -1 });
     const articleCount = await cursor.count();
     let count = 0
     await logger.log(LogLevel.INFO, color(`articles found: ${articleCount}`, 'grey'));
