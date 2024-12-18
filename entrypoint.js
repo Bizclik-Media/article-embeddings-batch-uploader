@@ -48,34 +48,32 @@ async function handler(status) {
       await handleBatchRequests(db, bucket, logger, state, openaiClient)
       return handler(JOB_STATUS.CHECKING_STATUS);
 
-
     case 'checking_status':
       // polling the OpenAI API for the status of the batch requests
       await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'checking_status' } });
       await checkStatus(db, logger, state, openaiClient);
       return handler(JOB_STATUS.UPDATING_VECTOR_STORE);
 
-
     case 'updating_vector_store':
       await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'updating_vector_store' } });
       await updatePinecone(db, logger, state, openaiClient, pineconeClient);
       return handler(JOB_STATUS.SUCCESS);
 
-
     case 'success':
       await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'success' } });
-      return await logger.log(LogLevel.INFO, color('Success', 'green'), '✅ Successfully created & uploaded batch files, congratulations 🥳!');
-
+      await logger.log(LogLevel.INFO, color('Success', 'green'), '✅ Successfully created & uploaded batch files, congratulations 🥳!');
+      return process.exit(0);
 
     case 'error':
       await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'error' } });
       await logger.log(LogLevel.ERROR, color('Error', 'red'), '⛔️ Unexpected error occured, check logs for more information');
-      return errors.forEach(err => log('\t' + err));
+      errors.forEach(err => log('\t' + err));
+      return process.exit(1);
 
     case 'exit':
       await db.collection('article-embedding-job').updateOne({ _id: state.jobId }, { $set: { status: 'exited' } });
       await logger.log(LogLevel.INFO, color('Exiting', 'grey'), '🔄 Exiting process...');
-      return
+      return process.exit(0);
 
     default: 
       return
