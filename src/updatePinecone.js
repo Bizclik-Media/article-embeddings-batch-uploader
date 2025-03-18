@@ -2,6 +2,9 @@ import createLogger, { LogLevel } from '../utils/log.js';
 import color from '../utils/color.js';
 import { ObjectId } from 'mongodb';
 
+// Add this constant at the top of the file
+const REFERENCE_DATE = new Date('2020-01-01T00:00:00.000Z');
+
 async function updatePinecone(db, logger = createLogger(), state, openaiClient, pineconeClient) {
     await logger.log(LogLevel.INFO, color('Updating Pinecone', 'grey'), '🔄 Updating Pinecone index...');
 
@@ -37,7 +40,11 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
                     if (article._id) metadata._id = ObjectId(article._id);
                     if (article.headline) metadata.headline = article.headline;
                     if (article.state) metadata.state = article.state;
-                    if (article.displayDate) metadata.displayDate = article.displayDate;
+                    if (article.displayDate) {
+                        const articleDate = new Date(article.displayDate);
+                        const daysSinceReference = Math.floor((articleDate - REFERENCE_DATE) / (1000 * 60 * 60 * 24));
+                        metadata.__daysSince2020 = daysSinceReference;
+                    }
                     if (article.tags) metadata.tags = article.tags.map((t) => t.tag);
                     if (article.category) metadata.category = article.category;
                     if (article.contentType) metadata.contentType = article.contentType;
@@ -70,3 +77,5 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
 }
 
 export default updatePinecone;
+
+// https://bizclik-site-production-admin.clockhosting.com/articles/6761a9a250e3337de78afbe9/form
