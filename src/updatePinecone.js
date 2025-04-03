@@ -26,7 +26,7 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
             // Retrieve the embeddings from OpenAI
             if(!jobBatch.openaiOutputFileId) continue
             const fileResponse = await openaiClient.files.content(jobBatch.openaiOutputFileId);
-            const fileContent = await fileResponse.text();  
+            const fileContent = await fileResponse.text();
             await logger.log(LogLevel.INFO, color(`\tRetrieved embeddings for batchId: ${jobBatch.openaiBatchId} from ${jobBatch.openaiOutputFileId}`, 'grey'));
             const upsertPayload = []
             for await (const line of fileContent.split('\n')) {
@@ -44,6 +44,7 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
                         const articleDate = new Date(article.displayDate);
                         const daysSinceReference = Math.floor((articleDate - REFERENCE_DATE) / (1000 * 60 * 60 * 24));
                         metadata.__daysSince2020 = daysSinceReference;
+                        metadata.__epoch = Math.floor(articleDate.getTime() / 1000); // Add epoch timestamp in seconds
                     }
                     if (article.tags) metadata.tags = article.tags.map((t) => t.tag);
                     if (article.category) metadata.category = article.category;
@@ -55,7 +56,7 @@ async function updatePinecone(db, logger = createLogger(), state, openaiClient, 
                 logger.log(LogLevel.INFO, color('\tArticle metadata:', 'grey'), JSON.stringify(metadata));
                 upsertPayload.push({ id, values: embedding, metadata});
             }
-            
+
             // Upsert to Pinecone
             // await index.namespace(String(state.jobId)).upsert(upsertPayload);
             await index.namespace(String(state.jobId)).upsert(upsertPayload);
